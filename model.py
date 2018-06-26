@@ -8,9 +8,9 @@ import tensorflow as tf
 from keras.preprocessing import image as keras_image
 
 def preprocess(x):
-	arr = x #keras_image.img_to_array(x)
-	yuv_arr = cv2.resize(cv2.cvtColor(arr, cv2.COLOR_RGB2YUV), (160, 80))
-	return yuv_arr
+	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
+	resize = cv2.resize(yuv, (160, 80))
+	return yuv
 
 
 
@@ -40,11 +40,11 @@ if __name__ == '__main__':
 	y_train = np.array(steer)
 
 	reg_constant = 1e-5
-	keep_prob = 0.5
+	keep_prob = 1.0
 	activation_func = 'relu'
 
 	model = Sequential()
-	model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(80,160,3)))
+	model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(160,320,3)))
 	model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
 	model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
 	model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
@@ -58,12 +58,13 @@ if __name__ == '__main__':
 	model.add(Dense(1, activation=activation_func, W_regularizer=l2(reg_constant)))
 	
 	
-	model.compile(loss='mse', optimizer='adam')
+	model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 	print("FITTING")
-	history = model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=5)
+
+	history = model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=1, verbose=0)
 	
 	print("TRAIN EVAL")
-	model.evaluate(X_train, y_train)
+	model.evaluate(X_train, y_train, verbose=1)
 
 	print("HISTORY")
 	print(history.history)
