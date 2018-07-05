@@ -62,7 +62,7 @@ if __name__ == '__main__':
 	model.compile(loss='mse', optimizer='adam')
 	print("FITTING")
 
-	history = model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=1, batch_size=1)
+	history = model.fit(X_train, y_train, validation_split=0.2, nb_epoch=3, batch_size=128)
 	
 	print("TRAIN EVAL")
 	model.evaluate(X_train, y_train, verbose=1)
