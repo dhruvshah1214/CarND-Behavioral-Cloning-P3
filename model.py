@@ -30,6 +30,7 @@ if __name__ == '__main__':
 		filename = path.split('/')[-1]
 		#print(filename)
 		full_path = 'data/IMG/' + filename
+		#print(full_path)
 		image = cv2.imread(full_path)
 		image_rgb = image[...,::-1]
 		images.append(preprocess(image_rgb))
@@ -41,27 +42,27 @@ if __name__ == '__main__':
 
 	reg_constant = 1e-5
 	keep_prob = 1.0
-	activation_func = 'relu'
+	activation_func = 'elu'
 
 	model = Sequential()
 	model.add(Lambda(lambda x: x/255.0 - 0.5, input_shape=(160,320,3)))
-	model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
-	model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
-	model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2), W_regularizer=l2(reg_constant)))
-	model.add(Convolution2D(64, 3, 3, activation=activation_func, W_regularizer=l2(reg_constant)))
-	model.add(Convolution2D(64, 3, 3, activation=activation_func, W_regularizer=l2(reg_constant)))
+	model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2)))
+	model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2)))
+	model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2)))
+	model.add(Convolution2D(64, 3, 3, activation=activation_func))
+	model.add(Convolution2D(64, 3, 3, activation=activation_func))
 	model.add(Flatten())
-	model.add(Dense(1164, activation=activation_func, W_regularizer=l2(reg_constant)))
-	model.add(Dense(100, activation=activation_func, W_regularizer=l2(reg_constant)))
-	model.add(Dense(50, activation=activation_func, W_regularizer=l2(reg_constant)))
-	model.add(Dense(10, activation=activation_func, W_regularizer=l2(reg_constant)))
-	model.add(Dense(1, activation=activation_func, W_regularizer=l2(reg_constant)))
+	model.add(Dense(1164, activation=activation_func))
+	model.add(Dense(100, activation=activation_func))
+	model.add(Dense(50, activation=activation_func))
+	model.add(Dense(10, activation=activation_func))
+	model.add(Dense(1, activation=activation_func))
 	
 	
-	model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+	model.compile(loss='mse', optimizer='adam')
 	print("FITTING")
 
-	history = model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=1, verbose=0)
+	history = model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch=1, batch_size=1)
 	
 	print("TRAIN EVAL")
 	model.evaluate(X_train, y_train, verbose=1)
