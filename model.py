@@ -122,7 +122,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	image_paths, steer = readAllData()
-	angleDistribution(steer)
+	#angleDistribution(steer)
 
 	#image_paths, steer = lowerZeroes(image_paths, steer)
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 		activation_func = 'elu'
 
 		model = Sequential()
-		model.add(Lambda(lambda x: x / data_mean - 1.0, input_shape=(160, 320, 3)))
+		model.add(Lambda(lambda x: x/127.5 - 1.0, input_shape=(160, 320, 3)))
 		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
 		model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2)))
 		model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2)))
@@ -154,5 +154,7 @@ if __name__ == '__main__':
 
 		print("FITTING")
 		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=20000, nb_epoch=1, verbose=2)
-
+	
+		print("SAVING MODEL")
 		model.save('model.h5')
+		print("SAVED")
