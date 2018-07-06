@@ -109,28 +109,6 @@ def generator_data(image_paths, steer, batch_size=128):
 					X, y = ([], [])
 					#image_paths, angles = shuffle(image_paths, angles)
 
-def getModel(data_mean=127.5):
-	activation_func = 'elu'
-
-	model = Sequential()
-	model.add(Lambda(lambda x: x/data_mean  - 1.0, input_shape=(160, 320, 3)))
-	model.add(Cropping2D(cropping=((50, 20), (0, 0))))
-	model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2)))
-	model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2)))
-	model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2)))
-	model.add(Dropout(0.7))
-	model.add(Convolution2D(64, 3, 3, activation=activation_func))
-	model.add(Convolution2D(64, 3, 3, activation=activation_func))
-	model.add(Flatten())
-	model.add(Dropout(0.5))
-	model.add(Dense(100, activation=activation_func))
-	model.add(Dense(50, activation=activation_func))
-	model.add(Dense(10, activation=activation_func))
-	model.add(Dense(1, activation=activation_func))
-
-	model.compile(loss='mse', optimizer='adam')
-
-	return model
 
 def preprocess(x):
 	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
@@ -154,10 +132,27 @@ if __name__ == '__main__':
 		train_gen = generator_data(image_paths, steer)
 		val_gen = generator_data(image_paths, steer)
 
-		model = getModel()
+		activation_func = 'elu'
+
+		model = Sequential()
+		model.add(Lambda(lambda x: x / data_mean - 1.0, input_shape=(160, 320, 3)))
+		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
+		model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2)))
+		model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2)))
+		model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2)))
+		model.add(Dropout(0.7))
+		model.add(Convolution2D(64, 3, 3, activation=activation_func))
+		model.add(Convolution2D(64, 3, 3, activation=activation_func))
+		model.add(Flatten())
+		model.add(Dropout(0.5))
+		model.add(Dense(100, activation=activation_func))
+		model.add(Dense(50, activation=activation_func))
+		model.add(Dense(10, activation=activation_func))
+		model.add(Dense(1, activation=activation_func))
+
+		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
 		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=20000, nb_epoch=1, verbose=2)
 
-		print(model.summary())
 		model.save('model.h5')
