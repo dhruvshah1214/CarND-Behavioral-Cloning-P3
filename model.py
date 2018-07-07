@@ -13,44 +13,44 @@ import tensorflow as tf
 from keras.preprocessing import image as keras_image
 
 
-def readAllData():
-	lines = []
-	with open('data/driving_log.csv') as csvfile:
-		reader = csv.reader(csvfile)
-		next(reader, None)
-		for line in reader:
-			lines.append(line)
-
+def readAllData(root_paths):
 	image_paths = []
 	steer = []
+	for root_path in root_paths:
+		lines = []
+		with open(root_path + 'driving_log.csv') as csvfile:
+			reader = csv.reader(csvfile)
+			next(reader, None)
+			for line in reader:
+				lines.append(line)
 
-	for line in lines:
+		for line in lines:
 
-		# skip low speeds
-		if float(line[6]) < 0.1:
-			continue
+			# skip low speeds
+			if float(line[6]) < 5.0:
+				continue
 
-		path = line[0]
-		filename = path.split('/')[-1]
-		# print(filename)
-		full_path = 'data/IMG/' + filename
-		# print(full_path)
-		measurement_steer = float(line[3])
+			path = line[0]
+			filename = path.split('/')[-1]
+			# print(filename)
+			full_path = root_path + 'IMG/' + filename
+			# print(full_path)
+			measurement_steer = float(line[3])
 
-		image_paths.append(full_path)
-		steer.append(measurement_steer)
+			image_paths.append(full_path)
+			steer.append(measurement_steer)
 
-		steer_correction = 0.25
+			steer_correction = 0.25
 
-		path_left = 'data/IMG/' + line[1].split('/')[-1]
+			path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
-		image_paths.append(path_left)
-		steer.append(measurement_steer + steer_correction)
+			image_paths.append(path_left)
+			steer.append(measurement_steer + steer_correction)
 
-		path_right = 'data/IMG/' + line[2].split('/')[-1]
+			path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
-		image_paths.append(path_right)
-		steer.append(measurement_steer - steer_correction)
+			image_paths.append(path_right)
+			steer.append(measurement_steer - steer_correction)
 
 	print("File reads: " + str(len(steer)))
 	return (np.array(image_paths), np.array(steer))
@@ -62,7 +62,7 @@ def angleDistribution(angles):
 	plt.show()
 	return  avg_samples_per_bin
 
-def lowerZeroes(image_paths, steer, keep_prob=0.2):
+def lowerZeroes(image_paths, steer, keep_prob=0.4):
 	image_path_new = []
 	steer_new = []
 	for i in range(len(steer)):
@@ -85,8 +85,8 @@ def flipImages(images, steer):
 
 def generator_data(image_paths, steer, batch_size=128):
 	X, y = ([], [])
+	image_paths, angles = shuffle(image_paths, steer)
 	while True:
-		image_paths, angles = shuffle(image_paths, steer)
 		for i in range(len(steer)):
 			img = cv2.imread(image_paths[i])
 			angle = steer[i]
@@ -98,16 +98,16 @@ def generator_data(image_paths, steer, batch_size=128):
 			if len(X) == batch_size:
 				yield (np.array(X), np.array(y))
 				X, y = ([], [])
-				# image_paths, angles = shuffle(image_paths, angles)
+				image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
-			if abs(angle) > 0.33:
+			if abs(angle) > 0.08:
 				img, angle = flipImages(np.array([img]), np.array([angle]))
 				X.append(img[0])
 				y.append(angle[0])
 				if len(X) == batch_size:
 					yield (np.array(X), np.array(y))
 					X, y = ([], [])
-					#image_paths, angles = shuffle(image_paths, angles)
+					image_paths, angles = shuffle(image_paths, angles)
 
 
 def preprocess(x):
@@ -121,12 +121,16 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData()
-	angleDistribution(steer)
+	image_paths, steer = readAllData(['data/', 'owndata-1/'])
 
-	#image_paths, steer = lowerZeroes(image_paths, steer)
+	#for histogram
+	steer_1 = steer
 
-	#angleDistribution(steer)
+	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.4)
+
+
+	#plt.hist([steer_1, steer])
+	#plt.show()
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
@@ -135,24 +139,23 @@ if __name__ == '__main__':
 		activation_func = 'elu'
 
 		model = Sequential()
-		model.add(Lambda(lambda x: x / data_mean - 1.0, input_shape=(160, 320, 3)))
+		model.add(Lambda(lambda x: x / 130  - 1.0, input_shape=(160, 320, 3)))
 		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
-		model.add(Convolution2D(24, 5, 5, activation=activation_func, subsample=(2, 2)))
-		model.add(Convolution2D(36, 5, 5, activation=activation_func, subsample=(2, 2)))
-		model.add(Convolution2D(48, 5, 5, activation=activation_func, subsample=(2, 2)))
-		model.add(Dropout(0.7))
-		model.add(Convolution2D(64, 3, 3, activation=activation_func))
-		model.add(Convolution2D(64, 3, 3, activation=activation_func))
+		model.add(Convolution2D(24, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
+		model.add(Convolution2D(36, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
+		model.add(Convolution2D(48, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
+		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
+		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Flatten())
 		model.add(Dropout(0.5))
 		model.add(Dense(100, activation=activation_func))
 		model.add(Dense(50, activation=activation_func))
 		model.add(Dense(10, activation=activation_func))
-		model.add(Dense(1, activation=activation_func))
+		model.add(Dense(1))
 
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=20000, nb_epoch=1, verbose=2)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=40000, nb_epoch=1, verbose=2)
 
 		model.save('model.h5')
