@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-reverse/', 'owndata-recovery/'])
+	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-reverse/'])
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
@@ -147,7 +147,7 @@ if __name__ == '__main__':
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=1)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=60000, nb_epoch=5, verbose=1)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
