@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.utils import shuffle
-
+from sklearn.model_selection import train_test_split
 import argparse
 
 from keras.models import Sequential
@@ -85,8 +85,8 @@ def flipImages(images, steer):
 
 def generator_data(image_paths, steer, batch_size=128):
 	X, y = ([], [])
-	image_paths, angles = shuffle(image_paths, steer)
 	while True:
+		image_paths, angles = shuffle(image_paths, steer)
 		for i in range(len(steer)):
 			img = cv2.imread(image_paths[i])
 			angle = steer[i]
@@ -98,7 +98,7 @@ def generator_data(image_paths, steer, batch_size=128):
 			if len(X) == batch_size:
 				yield (np.array(X), np.array(y))
 				X, y = ([], [])
-				image_paths, angles = shuffle(image_paths, angles)
+				#image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
 			if abs(angle) > 0.08:
 				img, angle = flipImages(np.array([img]), np.array([angle]))
@@ -107,7 +107,7 @@ def generator_data(image_paths, steer, batch_size=128):
 				if len(X) == batch_size:
 					yield (np.array(X), np.array(y))
 					X, y = ([], [])
-					image_paths, angles = shuffle(image_paths, angles)
+					#image_paths, angles = shuffle(image_paths, angles)
 
 
 def preprocess(x):
@@ -122,24 +122,19 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 
 	image_paths, steer = readAllData(['data/', 'owndata-1/'])
+	image_paths_train, image_paths_val, steer_train, steer_val = train_test_split(image_paths, steer, test_size=0.2)
 
-	#for histogram
-	steer_1 = steer
-
-	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.4)
-
-
-	#plt.hist([steer_1, steer])
-	#plt.show()
+	del image_paths
+	del steer
 
 	if args.t:
-		train_gen = generator_data(image_paths, steer)
-		val_gen = generator_data(image_paths, steer)
+		train_gen = generator_data(image_paths_train, steer_train)
+		val_gen = generator_data(image_paths_val, steer_val)
 
 		activation_func = 'elu'
 
 		model = Sequential()
-		model.add(Lambda(lambda x: x / 130  - 1.0, input_shape=(160, 320, 3)))
+		model.add(Lambda(lambda x: x / 130.0  - 1.0, input_shape=(160, 320, 3)))
 		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
 		model.add(Convolution2D(24, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
 		model.add(Convolution2D(36, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
@@ -156,7 +151,7 @@ if __name__ == '__main__':
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=40000, nb_epoch=1, verbose=2)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=2)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
