@@ -139,6 +139,7 @@ if __name__ == '__main__':
 		activation_func = 'elu'
 
 		model = Sequential()
+<<<<<<< HEAD
 		model.add(Lambda(lambda x: x / 130  - 1.0, input_shape=(160, 320, 3)))
 		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
 		model.add(Convolution2D(24, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
@@ -158,4 +159,6 @@ if __name__ == '__main__':
 		print("FITTING")
 		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=3000, samples_per_epoch=40000, nb_epoch=1, verbose=2)
 
+		print("SAVING MODEL")
 		model.save('model.h5')
+		print("SAVED")
