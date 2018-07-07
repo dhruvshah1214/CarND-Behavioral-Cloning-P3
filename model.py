@@ -85,8 +85,8 @@ def flipImages(images, steer):
 
 def generator_data(image_paths, steer, batch_size=128):
 	X, y = ([], [])
+	image_paths, angles = shuffle(image_paths, steer)
 	while True:
-		image_paths, angles = shuffle(image_paths, steer)
 		for i in range(len(steer)):
 			img = cv2.imread(image_paths[i])
 			angle = steer[i]
@@ -98,7 +98,7 @@ def generator_data(image_paths, steer, batch_size=128):
 			if len(X) == batch_size:
 				yield (np.array(X), np.array(y))
 				X, y = ([], [])
-				#image_paths, angles = shuffle(image_paths, angles)
+				image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
 			if abs(angle) > 0.08:
 				img, angle = flipImages(np.array([img]), np.array([angle]))
@@ -107,7 +107,7 @@ def generator_data(image_paths, steer, batch_size=128):
 				if len(X) == batch_size:
 					yield (np.array(X), np.array(y))
 					X, y = ([], [])
-					#image_paths, angles = shuffle(image_paths, angles)
+					image_paths, angles = shuffle(image_paths, angles)
 
 
 def preprocess(x):
@@ -121,15 +121,11 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-1/'])
-	image_paths_train, image_paths_val, steer_train, steer_val = train_test_split(image_paths, steer, test_size=0.2)
-
-	del image_paths
-	del steer
+	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-reverse/', 'owndata-recovery/'])
 
 	if args.t:
-		train_gen = generator_data(image_paths_train, steer_train)
-		val_gen = generator_data(image_paths_val, steer_val)
+		train_gen = generator_data(image_paths, steer)
+		val_gen = generator_data(image_paths, steer)
 
 		activation_func = 'elu'
 
@@ -151,7 +147,7 @@ if __name__ == '__main__':
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=2)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=1)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
