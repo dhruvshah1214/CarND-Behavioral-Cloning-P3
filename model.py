@@ -42,15 +42,17 @@ def readAllData(root_paths):
 
 			steer_correction = 0.25
 
-			path_left = root_path + 'IMG/' + line[1].split('/')[-1]
+			if measurement_steer > 0.05:
+				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
-			image_paths.append(path_left)
-			steer.append(measurement_steer + steer_correction)
+				image_paths.append(path_left)
+				steer.append(measurement_steer + steer_correction)
 
-			path_right = root_path + 'IMG/' + line[2].split('/')[-1]
+			if measurement_steer < -0.05:
+				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
-			image_paths.append(path_right)
-			steer.append(measurement_steer - steer_correction)
+				image_paths.append(path_right)
+				steer.append(measurement_steer - steer_correction)
 
 	print("File reads: " + str(len(steer)))
 	return (np.array(image_paths), np.array(steer))
@@ -100,7 +102,7 @@ def generator_data(image_paths, steer, batch_size=128):
 				X, y = ([], [])
 				image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
-			if abs(angle) > 0.08:
+			if abs(angle) > 0.33:
 				img, angle = flipImages(np.array([img]), np.array([angle]))
 				X.append(img[0])
 				y.append(angle[0])
@@ -121,7 +123,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-reverse/'])
+	image_paths, steer = readAllData(['data/', 'owndata-recovery/'])
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
@@ -147,7 +149,7 @@ if __name__ == '__main__':
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=60000, nb_epoch=5, verbose=1)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=1)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
