@@ -123,7 +123,10 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-1/'])
+	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-2/', 'owndata-recovery/'])
+
+	plt.hist(steer)
+	plt.show()
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
