@@ -27,7 +27,7 @@ def readAllData(root_paths):
 		for line in lines:
 
 			# skip low speeds
-			if float(line[6]) < 5.0:
+			if float(line[6]) < 5.0 or abs(float(line[3])) > 0.5:
 				continue
 
 			path = line[0]
@@ -40,15 +40,15 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			steer_correction = 0.25
+			steer_correction = 0.2
 
-			if measurement_steer > 0.05:
+			if measurement_steer > 0.15:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -0.05:
+			if measurement_steer < -0.15:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-recovery/'])
+	image_paths, steer = readAllData(['data/', 'owndata-1/'])
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
