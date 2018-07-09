@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-recovery4/'])
+	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
@@ -147,7 +147,6 @@ if __name__ == '__main__':
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Flatten())
-		model.add(Dropout(0.5))
 		model.add(Dense(100))
 		model.add(Dense(50))
 		model.add(Dense(10))
