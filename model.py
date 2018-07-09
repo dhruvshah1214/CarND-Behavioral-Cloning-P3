@@ -53,7 +53,7 @@ def readAllData(root_paths):
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -1.6 and abs(measurement_steer) < 1:
+			if measurement_steer < -0.3 and abs(measurement_steer) < 1:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -73,7 +73,7 @@ def lowerZeroes(image_paths, steer, keep_prob=0.4):
 	image_path_new = []
 	steer_new = []
 	for i in range(len(steer)):
-		if abs(float(steer[i])) < 0.05:
+		if abs(float(steer[i])) < 0.05 or steer[i] < -0.95:
 			# near-zero steer
 			if np.random.rand() < keep_prob:
 				image_path_new.append(image_paths[i])
