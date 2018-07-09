@@ -27,9 +27,10 @@ def readAllData(root_paths):
 		for line in lines:
 
 			# skip low speeds
-			if float(line[6]) < 5.0 or abs(float(line[3])) > 0.5:
+			if float(line[6]) < 5.0:
 				continue
-
+			if "recovery" in root_path and abs(float(line[3])) < 0.1:
+				continue
 			path = line[0]
 			filename = path.split('/')[-1]
 			# print(filename)
@@ -40,7 +41,7 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			steer_correction = 0.2
+			steer_correction = 0.3
 
 			if measurement_steer > 0.15:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
@@ -85,7 +86,7 @@ def flipImages(images, steer):
 	return images_flipped, steer_flipped
 
 
-def generator_data(image_paths, steer, batch_size=128):
+def generator_data(image_paths, steer, batch_size=256):
 	X, y = ([], [])
 	image_paths, angles = shuffle(image_paths, steer)
 	while True:
@@ -102,7 +103,7 @@ def generator_data(image_paths, steer, batch_size=128):
 				X, y = ([], [])
 				image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
-			if abs(angle) > 0.33:
+			if abs(angle) > 2:
 				img, angle = flipImages(np.array([img]), np.array([angle]))
 				X.append(img[0])
 				y.append(angle[0])
@@ -123,16 +124,16 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-2/', 'owndata-recovery/'])
+	image_paths, steer = readAllData(['data/', 'owndata-1/', 'owndata-2/', 'owndata-recovery/','owndata-recovery2/', 'owndata-recovery2/'])
 
-	plt.hist(steer)
-	plt.show()
+	#plt.hist(steer)
+	#plt.show()
 
 	if args.t:
 		train_gen = generator_data(image_paths, steer)
 		val_gen = generator_data(image_paths, steer)
 
-		activation_func = 'elu'
+		activation_func = 'relu'
 
 		model = Sequential()
 		model.add(Lambda(lambda x: x / 130.0  - 1.0, input_shape=(160, 320, 3)))
@@ -144,15 +145,15 @@ if __name__ == '__main__':
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Flatten())
 		model.add(Dropout(0.5))
-		model.add(Dense(100, activation=activation_func))
-		model.add(Dense(50, activation=activation_func))
-		model.add(Dense(10, activation=activation_func))
+		model.add(Dense(100))
+		model.add(Dense(50))
+		model.add(Dense(10))
 		model.add(Dense(1))
 
 		model.compile(loss='mse', optimizer='adam')
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=40000, nb_epoch=1, verbose=1)
+		history = model.fit_generator(train_gen, validation_data=val_gen, nb_val_samples=8000, samples_per_epoch=30000, nb_epoch=1, verbose=1)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
