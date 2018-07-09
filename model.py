@@ -70,7 +70,7 @@ def lowerZeroes(image_paths, steer, keep_prob=0.4):
 	image_path_new = []
 	steer_new = []
 	for i in range(len(steer)):
-		if abs(float(steer[i])) < 0.1:
+		if abs(float(steer[i])) < 0.05:
 			# near-zero steer
 			if np.random.rand() < keep_prob:
 				image_path_new.append(image_paths[i])
@@ -116,10 +116,11 @@ def generator_data(image_paths, steer, batch_size=64):
 
 
 def preprocess(x):
-	return x
 	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
-	resize = cv2.resize(yuv, (160, 80))
-	return yuv
+	new_img = yuv[50:140,:,:]
+	new_img = cv2.GaussianBlur(new_img, (3,3), 0)
+	new_img = cv2.resize(new_img,(200, 66), interpolation = cv2.INTER_AREA)
+	return new_img
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='CarND Behvioral Cloning')
@@ -127,8 +128,8 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery2/', 'owndata-recovery3/', 'owndata-recovery4/'])
-	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.2)
+	image_paths, steer = readAllData(['data/', 'owndata-recovery4/'])
+	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
 	#plt.show()
@@ -139,15 +140,13 @@ if __name__ == '__main__':
 		activation_func = 'elu'
 
 		model = Sequential()
-		model.add(Lambda(lambda x: x / 255.0  - 0.5, input_shape=(160, 320, 3)))
-		model.add(Cropping2D(cropping=((50, 20), (0, 0))))
+		model.add(Lambda(lambda x: x / 127.5  - 1.0, input_shape=(66, 200, 3)))
 		model.add(Convolution2D(24, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
 		model.add(Convolution2D(36, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
 		model.add(Convolution2D(48, 5, 5, activation=activation_func, border_mode='valid', subsample=(2, 2)))
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Flatten())
-		model.add(Dropout(0.5))
 		model.add(Dense(100))
 		model.add(Dense(50))
 		model.add(Dense(10))
@@ -155,7 +154,7 @@ if __name__ == '__main__':
 		
 		adam = Adam(lr=0.0001)
 		model.compile(loss='mse', optimizer=adam)
-
+		print(model.summary())
 		print("FITTING")
 		history = model.fit_generator(train_gen, samples_per_epoch=20000, nb_epoch=1, verbose=1)
 
