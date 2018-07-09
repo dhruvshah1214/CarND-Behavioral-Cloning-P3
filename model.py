@@ -29,9 +29,8 @@ def readAllData(root_paths):
 			# skip low speeds
 			if float(line[6]) < 5.0:
 				continue
-			
-			if 'recovery' in root_path and abs(float(line[3])) < 0.175:
-				continue
+			if 'recovery' in root_path and abs(float(line[3])) < 0.1:
+				continue	
  
 			path = line[0]
 			filename = path.split('/')[-1]
@@ -43,20 +42,15 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			if 'recovery4' in root_path:
-				for i in range(20):
-                        		image_paths.append(full_path)
-                        		steer.append(measurement_steer)		
-
 			steer_correction = 0.1
 
-			if measurement_steer > 0.1 and abs(measurement_steer) < -0.3:
+			if measurement_steer > 1.6:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -0.1 and abs(measurement_steer) < -0.3:
+			if measurement_steer < -1.6 and abs(measurement_steer) < 1:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -122,6 +116,7 @@ def generator_data(image_paths, steer, batch_size=64):
 
 
 def preprocess(x):
+	return x
 	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
 	resize = cv2.resize(yuv, (160, 80))
 	return yuv
@@ -132,14 +127,14 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/','owndata-1/', 'owndata-2/', 'owndata-reverse/', 'owndata-recovery/', 'owndata-recovery/', 'owndata-recovery3/', 'owndata-recovery3/'])
+	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery2/', 'owndata-recovery3/', 'owndata-recovery4/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.2)
 	
 	#plt.hist(steer)
 	#plt.show()
 
 	if args.t:
-		train_gen = generator_data(image_paths, steer, batch_size=256)
+		train_gen = generator_data(image_paths, steer, batch_size=512)
 
 		activation_func = 'elu'
 
@@ -162,7 +157,7 @@ if __name__ == '__main__':
 		model.compile(loss='mse', optimizer=adam)
 
 		print("FITTING")
-		history = model.fit_generator(train_gen, samples_per_epoch=40000, nb_epoch=1, verbose=1)
+		history = model.fit_generator(train_gen, samples_per_epoch=20000, nb_epoch=1, verbose=1)
 
 		print("SAVING MODEL")
 		model.save('model.h5')
