@@ -31,7 +31,10 @@ def readAllData(root_paths):
 				continue
 			if 'recovery' in root_path and abs(float(line[3])) < 0.1:
 				continue	
- 
+			
+			if root_path == 'data/' and abs(float(line[3])) > 0.7:
+				continue
+
 			path = line[0]
 			filename = path.split('/')[-1]
 			# print(filename)
@@ -92,7 +95,7 @@ def generator_data(image_paths, steer, batch_size=64):
 	image_paths, angles = shuffle(image_paths, steer)
 	while True:
 		for i in range(len(steer)):
-			img = cv2.imread(image_paths[i])
+			img = cv2.cvtColor(cv2.imread(image_paths[i]), cv2.COLOR_BGR2RGB)
 			angle = steer[i]
 			img = preprocess(img)
 
@@ -117,7 +120,7 @@ def generator_data(image_paths, steer, batch_size=64):
 
 def preprocess(x):
 	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
-	new_img = yuv[50:140,:,:]
+	new_img = yuv[60:140,:,:]
 	new_img = cv2.GaussianBlur(new_img, (3,3), 0)
 	new_img = cv2.resize(new_img,(200, 66), interpolation = cv2.INTER_AREA)
 	return new_img
