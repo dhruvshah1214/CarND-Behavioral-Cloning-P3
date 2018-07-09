@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
