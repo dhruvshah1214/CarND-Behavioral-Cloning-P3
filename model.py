@@ -29,7 +29,7 @@ def readAllData(root_paths):
 			# skip low speeds
 			if float(line[6]) < 5.0:
 				continue
-			if 'recovery' in root_path and abs(float(line[3])) < 0.1:
+			if 'recovery' in root_path and abs(float(line[3])) < 0.3:
 				continue	
 			
 			if root_path == 'data/' and abs(float(line[3])) > 0.7:
@@ -45,15 +45,15 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			steer_correction = 0.1
+			steer_correction = 0.2
 
-			if measurement_steer > 1.6:
+			if measurement_steer > 0.3 and 'recovery' in root_path:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -0.3 and abs(measurement_steer) < 1:
+			if measurement_steer < -0.3 and 'recovery' in root_path:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -73,7 +73,7 @@ def lowerZeroes(image_paths, steer, keep_prob=0.4):
 	image_path_new = []
 	steer_new = []
 	for i in range(len(steer)):
-		if abs(float(steer[i])) < 0.05 or steer[i] < -0.95:
+		if abs(float(steer[i])) < 0.05 or steer[i] < -1.95:
 			# near-zero steer
 			if np.random.rand() < keep_prob:
 				image_path_new.append(image_paths[i])
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-recovery5/', 'owndata-recovery6/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
