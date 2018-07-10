@@ -29,10 +29,7 @@ def readAllData(root_paths):
 			# skip low speeds
 			if float(line[6]) < 5.0:
 				continue
-			if 'recovery' in root_path and abs(float(line[3])) < 0.5:
-				continue
-			
-			if 'recove123123ry4' in root_path and float(line[3]) > 0.0:
+			if 'recovery' in root_path and abs(float(line[3])) < 0.4:
 				continue	
 			
 			if root_path == 'data/' and abs(float(line[3])) > 0.7:
@@ -110,7 +107,7 @@ def generator_data(image_paths, steer, batch_size=64):
 				X, y = ([], [])
 				image_paths, angles = shuffle(image_paths, angles)
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
-			if abs(float(angle)) > 0.5:
+			if abs(float(angle)) > 0.3:
 				img = img[:,::-1,:]
 				angle = -1.0 * angle
 				X.append(img)
@@ -134,7 +131,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/'])
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/', 'owndata-recovery7/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
