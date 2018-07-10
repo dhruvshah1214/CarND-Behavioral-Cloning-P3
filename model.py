@@ -2,6 +2,8 @@ import csv
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+#plt.switch_backend('agg')
+
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import argparse
@@ -29,10 +31,10 @@ def readAllData(root_paths):
 			# skip low speeds
 			if float(line[6]) < 5.0:
 				continue
-			if 'recovery' in root_path and abs(float(line[3])) < 0.4:
+			if 'recovery' in root_path and abs(float(line[3])) < 0.0:
 				continue	
 			
-			if root_path == 'data/' and abs(float(line[3])) > 0.7:
+			if root_path == 'data/' and abs(float(line[3])) > 1.0:
 				continue
 
 			path = line[0]
@@ -45,7 +47,7 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			steer_correction = 0.27
+			steer_correction = 0.2
 
 			if measurement_steer > 0.3:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
@@ -90,7 +92,7 @@ def flipImages(images, steer):
 	return images_flipped, steer_flipped
 
 
-def generator_data(image_paths, steer, batch_size=64):
+def generator_data(image_paths, steer, batch_size=64, keep_probs=[]):
 	X, y = ([], [])
 	image_paths, angles = shuffle(image_paths, steer)
 	while True:
@@ -106,6 +108,19 @@ def generator_data(image_paths, steer, batch_size=64):
 				yield (np.array(X), np.array(y))
 				X, y = ([], [])
 				image_paths, angles = shuffle(image_paths, angles)
+
+
+			for j in range(num_bins):
+				if angle > bins[j] and angle <= bins[j+1]:
+					if np.random.rand() < keep_probs[j] - 1.0:
+						X.append(random_brightness(img))
+						y.append(angle)
+						break
+			if len(X) == batch_size:
+				yield (np.array(X), np.array(y))
+				X, y = ([], [])
+				image_paths, angles = shuffle(image_paths, angles)
+
 			# flip horizontally and invert steer angle, if magnitude is > 0.33
 			if abs(float(angle)) > 0.3:
 				img = img[:,::-1,:]
@@ -117,12 +132,19 @@ def generator_data(image_paths, steer, batch_size=64):
 					X, y = ([], [])
 					image_paths, angles = shuffle(image_paths, angles)
 
+def random_brightness(image):
+	hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+	rand = random.uniform(0.3,1.0)
+	hsv[:,:,2] = rand*hsv[:,:,2]
+	new_img = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+	return new_img 
+
 
 def preprocess(x):
-	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
-	new_img = yuv[60:140,:,:]
+	new_img = x[60:140,:,:]
 	new_img = cv2.GaussianBlur(new_img, (3,3), 0)
 	new_img = cv2.resize(new_img,(200, 66), interpolation = cv2.INTER_AREA)
+	new_img = cv2.cvtColor(new_img, cv2.COLOR_RGB2YUV)
 	return new_img
 
 if __name__ == '__main__':
@@ -131,14 +153,36 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/', 'owndata-recovery8/'])
-	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.1)
+	image_paths, angles = readAllData(['owndata-reverse/', 'owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery4/', 'owndata-recovery8/'])
+
+	#image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.1)
+
+	num_bins = 23
+	avg_samples_per_bin = len(angles)/num_bins
+	hist, bins = np.histogram(angles, num_bins)
+	width = 0.7 * (bins[1] - bins[0])
+	center = (bins[:-1] + bins[1:]) / 2
+	keep_probs = []
+	target = avg_samples_per_bin * 0.5
+	for i in range(num_bins):
+		keep_probs.append(1./(hist[i]/target))
+	remove_list = []
+	for i in range(len(angles)):
+		for j in range(num_bins):
+			if angles[i] > bins[j] and angles[i] <= bins[j+1]:	
+				if np.random.rand() > keep_probs[j]:
+					remove_list.append(i)
+	image_paths = np.delete(image_paths, remove_list, axis=0)
+	angles = np.delete(angles, remove_list)
+
+	hist, bins = np.histogram(angles, num_bins)
+	plt.bar(center, hist, align='center', width=width)
+	plt.plot((np.min(angles), np.max(angles)), (avg_samples_per_bin, avg_samples_per_bin), 'k-')
+	plt.show()
 	
-	#plt.hist(steer)
-	#plt.show()
 
 	if args.t:
-		train_gen = generator_data(image_paths, steer, batch_size=128)
+		train_gen = generator_data(image_paths, steer, batch_size=128, keep_probs=(keep_probs, bins))
 
 		activation_func = 'elu'
 
