@@ -45,15 +45,15 @@ def readAllData(root_paths):
 			image_paths.append(full_path)
 			steer.append(measurement_steer)
 
-			steer_correction = 0.2
+			steer_correction = 0.27
 
-			if measurement_steer > 1.3 and 'recovery' in root_path:
+			if measurement_steer > 0.3:
 				path_left = root_path + 'IMG/' + line[1].split('/')[-1]
 
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -0.3 and 'recovery' in root_path:
+			if measurement_steer < -0.3:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -131,8 +131,8 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/', 'owndata-recovery7/'])
-	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/', 'owndata-recovery8/'])
+	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.1)
 	
 	#plt.hist(steer)
 	#plt.show()
@@ -150,6 +150,7 @@ if __name__ == '__main__':
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Convolution2D(64, 3, 3, border_mode='valid', activation=activation_func))
 		model.add(Flatten())
+		model.add(Dropout(0.5))
 		model.add(Dense(100))
 		model.add(Dense(50))
 		model.add(Dense(10))
