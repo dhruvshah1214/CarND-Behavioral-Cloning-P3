@@ -31,7 +31,10 @@ def readAllData(root_paths):
 				continue
 			if 'recovery' in root_path and abs(float(line[3])) < 0.1:
 				continue	
- 
+			
+			if root_path == 'data/' and abs(float(line[3])) > 0.7:
+				continue
+
 			path = line[0]
 			filename = path.split('/')[-1]
 			# print(filename)
@@ -50,7 +53,7 @@ def readAllData(root_paths):
 				image_paths.append(path_left)
 				steer.append(measurement_steer + steer_correction)
 
-			if measurement_steer < -1.6 and abs(measurement_steer) < 1:
+			if measurement_steer < -0.3 and abs(measurement_steer) < 1:
 				path_right = root_path + 'IMG/' + line[2].split('/')[-1]
 
 				image_paths.append(path_right)
@@ -70,7 +73,7 @@ def lowerZeroes(image_paths, steer, keep_prob=0.4):
 	image_path_new = []
 	steer_new = []
 	for i in range(len(steer)):
-		if abs(float(steer[i])) < 0.05:
+		if abs(float(steer[i])) < 0.05 or steer[i] < -0.95:
 			# near-zero steer
 			if np.random.rand() < keep_prob:
 				image_path_new.append(image_paths[i])
@@ -92,7 +95,7 @@ def generator_data(image_paths, steer, batch_size=64):
 	image_paths, angles = shuffle(image_paths, steer)
 	while True:
 		for i in range(len(steer)):
-			img = cv2.imread(image_paths[i])
+			img = cv2.cvtColor(cv2.imread(image_paths[i]), cv2.COLOR_BGR2RGB)
 			angle = steer[i]
 			img = preprocess(img)
 
@@ -117,7 +120,7 @@ def generator_data(image_paths, steer, batch_size=64):
 
 def preprocess(x):
 	yuv = cv2.cvtColor(x, cv2.COLOR_RGB2YUV)
-	new_img = yuv[50:140,:,:]
+	new_img = yuv[60:140,:,:]
 	new_img = cv2.GaussianBlur(new_img, (3,3), 0)
 	new_img = cv2.resize(new_img,(200, 66), interpolation = cv2.INTER_AREA)
 	return new_img
@@ -128,7 +131,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['data/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery4/', 'owndata-recovery3/', 'owndata-reverse/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
