@@ -32,9 +32,15 @@ def readAllData(root_paths):
 			if 'recovery' in root_path and abs(float(line[3])) < 0.5:
 				continue
 			
-			if 'recove123123ry4' in root_path and float(line[3]) > 0.0:
-				continue	
+			if 'recovery8' in root_path:
+				line[3] = float(line[3]) - 0.2
 			
+			if 'recovery9' in root_path:
+				if float(line[3]) < 0.0:
+					line[3] = float(line[3]) - 0.1
+				else:
+					line[3] = float(line[3]) + 0.1
+
 			if root_path == 'data/' and abs(float(line[3])) > 0.7:
 				continue
 
@@ -134,7 +140,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/'])
+	image_paths, steer = readAllData(['owndata-3/', 'owndata-recovery6/', 'owndata-recovery5/', 'owndata-recovery6/', 'owndata-recovery8/', 'owndata-recovery9/'])
 	image_paths, steer = lowerZeroes(image_paths, steer, keep_prob=0.05)
 	
 	#plt.hist(steer)
